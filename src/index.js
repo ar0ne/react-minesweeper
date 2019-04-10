@@ -4,6 +4,7 @@ import './index.css';
 
 const BOMB = 'X';
 
+
 function Square(props) {
     return (
         <button 
@@ -85,16 +86,20 @@ class Game extends React.Component {
         this.state = {
             squares: this.initSquares(),
             history: [],
-            status: '',
+            gameOver: false,
         };
     }
 
     handleClick(i) {
+        if (this.state.gameOver) {
+            return;
+        }
         const square = this.state.squares[i];
         const history = this.state.history.slice();
+        let gameOverStatus = false;
         if (square === BOMB) {
             alert('Game over');
-            return;
+            gameOverStatus = true;
         }
 
         if (history.includes(i)) {
@@ -103,10 +108,9 @@ class Game extends React.Component {
 
         this.setState({
             squares: this.state.squares.slice(),
-            history: history.concat(i)
+            history: history.concat(i),
+            gameOver: gameOverStatus,
         });
-
-        console.log(this.state.history)
     }
 
     initSquares(size = 25, complexity = 5) {
@@ -149,14 +153,31 @@ class Game extends React.Component {
         return squares;
     }
 
+    restartGame() {
+        this.setState({
+            squares: this.initSquares(),
+            history: [],
+            gameOver: false,
+        });
+    }
+
 
     render() {
+
+        const gameOverStatus = this.state.gameOver ? 
+            'Game over! Restart the game':
+            '';
+
         return (
-            <Board 
-                squares={this.state.squares}
-                history={this.state.history}
-                onClick={i => this.handleClick(i)}
-            />
+            <div>
+                <h1 className='status'>{gameOverStatus}</h1>
+                <Board 
+                    squares={this.state.squares}
+                    history={this.state.history}
+                    onClick={i => this.handleClick(i)}
+                />
+            <button className="btn" onClick={() => this.restartGame()}>Restart</button>
+            </div>
         );
     }
 
