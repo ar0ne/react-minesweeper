@@ -4,6 +4,8 @@ import './index.css';
 
 const BOMB = 'X';
 
+// @TODO: handle second mouse button
+
 
 function Square(props) {
     return (
@@ -76,9 +78,8 @@ class Board extends React.Component {
             return this.props.squares[i];
         }
     }
-
-
 }
+
 class Game extends React.Component {
 
     constructor(props) {
@@ -94,23 +95,33 @@ class Game extends React.Component {
         if (this.state.gameOver) {
             return;
         }
-        const square = this.state.squares[i];
+
         const history = this.state.history.slice();
-        let gameOverStatus = false;
-        if (square === BOMB) {
-            alert('Game over');
-            gameOverStatus = true;
-        }
+        let closesZeroes = [];
 
         if (history.includes(i)) {
             return;
         }
 
+        let gameOverStatus = false;
+
+        let square = this.state.squares[i]
+        if (square === BOMB) {
+            gameOverStatus = true;
+        } else if (square === 0) {
+            closesZeroes = this.handleZeroes(i);
+        }
+
         this.setState({
             squares: this.state.squares.slice(),
-            history: history.concat(i),
+            history: history.concat(i).concat(closesZeroes),
             gameOver: gameOverStatus,
         });
+    }
+
+    handleZeroes(i) {
+        // @TODO: recursively check neighbours
+        return [];
     }
 
     initSquares(size = 25, complexity = 5) {
@@ -163,10 +174,9 @@ class Game extends React.Component {
 
 
     render() {
-
         const gameOverStatus = this.state.gameOver ? 
             'Game over! Restart the game':
-            '';
+            'Good luck!';
 
         return (
             <div>
@@ -176,11 +186,10 @@ class Game extends React.Component {
                     history={this.state.history}
                     onClick={i => this.handleClick(i)}
                 />
-            <button className="btn" onClick={() => this.restartGame()}>Restart</button>
+                <button className="btn" onClick={() => this.restartGame()}>Restart</button>
             </div>
         );
     }
-
 }
 
 
