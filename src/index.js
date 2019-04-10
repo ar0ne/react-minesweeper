@@ -13,6 +13,8 @@ function Square(props) {
     );
 }
 
+const BOMB = 'X';
+
 
 class Board extends React.Component {
     render() {
@@ -63,7 +65,8 @@ class Board extends React.Component {
         return (
             <Square 
                 onClick={() => this.props.onClick(i)}
-                value={i}
+                // value={this.props.history[i]}
+                value={this.props.squares[i]}
             />
         );
     }
@@ -75,13 +78,63 @@ class Game extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            squares: Array(25).fill(null) // @TODO: fill out squares randomly
+            squares: this.initSquares(),
+            history: [],
         };
     }
 
     handleClick(i) {
         const square = this.state.squares[i];
-        console.log(i);
+        const history = this.state.history.slice();
+        if (square === BOMB) {
+            console.log('Game over');
+        }
+
+        this.setState({
+            squares: this.state.squares.slice(),
+            history: history.concat(i)
+        });
+
+        console.log(this.state)
+    }
+
+    initSquares(size = 25, complexity = 5) {
+        let squares = Array(size).fill(null);
+        let counter = 0;
+        while(counter < complexity) {
+            let index = Math.floor(Math.random() * (size - 0));
+            if (squares[index] === BOMB) {
+                continue;
+            }
+            squares[index] = BOMB;
+            counter++;
+        }
+
+        let delimiter = Math.sqrt(size);
+        for(var i = 0; i < delimiter; i++) {
+            for (var j = 0; j < delimiter; j++) {
+                let index = i * delimiter + j;
+                if (squares[index] !== BOMB) {
+                    let counter = 0;
+
+                    if (squares[index - delimiter] === 'X') {
+                        counter++;
+                    } 
+                    if (squares[index + delimiter] === 'X') {
+                        counter++;
+                    } 
+                    if ((index + 1) % delimiter !== 0 && squares[index + 1] === 'X') {
+                        counter++;
+                    }
+                    if (index % delimiter !== 0 && squares[index - 1] === 'X') {
+                        counter++;
+                    }  
+                    squares[index] = counter;
+                }
+            }
+        }
+
+        return squares;
     }
 
 
@@ -89,6 +142,7 @@ class Game extends React.Component {
         return (
             <Board 
                 squares={this.state.squares}
+                history={this.state.history}
                 onClick={i => this.handleClick(i)}
             />
         );
