@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
+const BOMB = 'X';
+
 function Square(props) {
     return (
         <button 
@@ -12,8 +14,6 @@ function Square(props) {
         </button> 
     );
 }
-
-const BOMB = 'X';
 
 
 class Board extends React.Component {
@@ -65,10 +65,15 @@ class Board extends React.Component {
         return (
             <Square 
                 onClick={() => this.props.onClick(i)}
-                // value={this.props.history[i]}
-                value={this.props.squares[i]}
+                value={this.renderValue(i)}
             />
         );
+    }
+
+    renderValue(i) {
+        if (this.props.history.includes(i)) {
+            return this.props.squares[i];
+        }
     }
 
 
@@ -80,6 +85,7 @@ class Game extends React.Component {
         this.state = {
             squares: this.initSquares(),
             history: [],
+            status: '',
         };
     }
 
@@ -87,7 +93,12 @@ class Game extends React.Component {
         const square = this.state.squares[i];
         const history = this.state.history.slice();
         if (square === BOMB) {
-            console.log('Game over');
+            alert('Game over');
+            return;
+        }
+
+        if (history.includes(i)) {
+            return;
         }
 
         this.setState({
@@ -95,7 +106,7 @@ class Game extends React.Component {
             history: history.concat(i)
         });
 
-        console.log(this.state)
+        console.log(this.state.history)
     }
 
     initSquares(size = 25, complexity = 5) {
@@ -116,19 +127,20 @@ class Game extends React.Component {
                 let index = i * delimiter + j;
                 if (squares[index] !== BOMB) {
                     let counter = 0;
-
-                    if (squares[index - delimiter] === 'X') {
+                    if (squares[index - delimiter] === BOMB) {
                         counter++;
                     } 
-                    if (squares[index + delimiter] === 'X') {
+                    if (squares[index + delimiter] === BOMB) {
                         counter++;
                     } 
-                    if ((index + 1) % delimiter !== 0 && squares[index + 1] === 'X') {
+                    if ((index + 1) % delimiter !== 0 && squares[index + 1] === BOMB) {
                         counter++;
                     }
-                    if (index % delimiter !== 0 && squares[index - 1] === 'X') {
+                    if (index % delimiter !== 0 && squares[index - 1] === BOMB) {
                         counter++;
-                    }  
+                    }
+                    // @TODO: add checks for rest neighbours 
+
                     squares[index] = counter;
                 }
             }
