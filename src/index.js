@@ -3,6 +3,15 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 const BOMB = 'X';
+const GAME_OVER = "GAME_OVER";
+const GAME_WON = "GAME_WON";
+
+const STATUSES = {
+    GAME_OVER: 'Game over!',
+    GAME_WON: "You win!",
+    null: 'Good luck!',
+}
+
 
 // @TODO: handle second mouse button
 
@@ -85,51 +94,71 @@ class Game extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            squares: this.initSquares(),
+            squares: [],
             history: [],
-            gameOver: false,
+            status: null,
         };
     }
 
+
     handleClick(i) {
-        if (this.state.gameOver) {
+        let squares = this.state.squares;
+        if (!squares.length) {
+            squares = this.initSquares(i);
+        }
+
+        let status = this.state.status;
+
+        if (status === GAME_OVER || status === GAME_WON) {
             return;
         }
 
-        const history = this.state.history.slice();
+        let history = this.state.history.slice();
         let closesZeroes = [];
 
         if (history.includes(i)) {
             return;
         }
 
-        let gameOverStatus = false;
 
-        let square = this.state.squares[i]
+        let square = squares[i]
         if (square === BOMB) {
-            gameOverStatus = true;
+            status = GAME_OVER;
         } else if (square === 0) {
-            closesZeroes = this.handleZeroes(i);
+            closesZeroes = this.openClosestZeroSquares(i);
+        } 
+
+        history = history.concat(i).concat(closesZeroes);
+
+        if (this.isGameWon(squares, history)) {
+            status = GAME_WON;
         }
 
         this.setState({
-            squares: this.state.squares.slice(),
-            history: history.concat(i).concat(closesZeroes),
-            gameOver: gameOverStatus,
+            squares: squares.slice(),
+            history: history,
+            status: status,
         });
     }
 
-    handleZeroes(i) {
+    openClosestZeroSquares(i) {
         // @TODO: recursively check neighbours
         return [];
     }
 
-    initSquares(size = 25, complexity = 5) {
+    containsAllElements = (arr, target) => target.every(v => arr.includes(v));
+
+    isGameWon(squares, history) {
+        let notBombs = squares.map((val, index) => val !== BOMB ? index : undefined).filter(x => x !== undefined);
+        return this.containsAllElements(history, notBombs);
+    }
+
+    initSquares(excluded, size = 25, complexity = 5) {
         let squares = Array(size).fill(null);
         let counter = 0;
         while(counter < complexity) {
             let index = Math.floor(Math.random() * (size - 0));
-            if (squares[index] === BOMB) {
+            if (index === excluded || squares[index] === BOMB) {
                 continue;
             }
             squares[index] = BOMB;
@@ -166,21 +195,20 @@ class Game extends React.Component {
 
     restartGame() {
         this.setState({
-            squares: this.initSquares(),
+            squares: [],
             history: [],
-            gameOver: false,
+            status: null,
         });
     }
 
 
     render() {
-        const gameOverStatus = this.state.gameOver ? 
-            'Game over! Restart the game':
-            'Good luck!';
+
+        let gameStatus = STATUSES[this.state.status];
 
         return (
             <div>
-                <h1 className='status'>{gameOverStatus}</h1>
+                <h1 className='status'>{gameStatus}</h1>
                 <Board 
                     squares={this.state.squares}
                     history={this.state.history}
