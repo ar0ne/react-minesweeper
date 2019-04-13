@@ -31,45 +31,23 @@ function Square(props) {
 class Board extends React.Component {
     render() {
 
-        // @TODO: refactor it!
+        // @TODO: take size from state
+        // @TODO: add support of different board sizes
+
+        let cols = 5;
+        let rows = 5;
+
+        let board = []
+        for (var i = 0; i < cols; i++) {
+            let row = []
+            for (var j = 0; j < rows; j++) {
+                row.push(this.renderSquare(i * cols + j))
+            }
+            board.push(<div className="board-row">{row}</div>)
+        }
+
         return (
-            <div>
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(5)}
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                    {this.renderSquare(9)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(10)}
-                    {this.renderSquare(11)}
-                    {this.renderSquare(12)}
-                    {this.renderSquare(13)}
-                    {this.renderSquare(14)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(15)}
-                    {this.renderSquare(16)}
-                    {this.renderSquare(17)}
-                    {this.renderSquare(18)}
-                    {this.renderSquare(19)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(20)}
-                    {this.renderSquare(21)}
-                    {this.renderSquare(22)}
-                    {this.renderSquare(23)}
-                    {this.renderSquare(24)}
-                </div>
-            </div>
+            <div className="board">{board}</div>
         );
     }
 
@@ -149,7 +127,9 @@ class Game extends React.Component {
     containsAllElements = (arr, target) => target.every(v => arr.includes(v));
 
     isGameWon(squares, history) {
-        let notBombs = squares.map((val, index) => val !== BOMB ? index : undefined).filter(x => x !== undefined);
+        let notBombs = squares
+            .map((val, index) => val !== BOMB ? index : undefined)
+            .filter(x => x !== undefined);
         return this.containsAllElements(history, notBombs);
     }
 
