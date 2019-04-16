@@ -43,7 +43,7 @@ class Board extends React.Component {
             for (var j = 0; j < rows; j++) {
                 row.push(this.renderSquare(i * cols + j))
             }
-            board.push(<div className="board-row">{row}</div>)
+            board.push(<div className="board-row" key={i}>{row}</div>)
         }
 
         return (
@@ -56,6 +56,7 @@ class Board extends React.Component {
             <Square 
                 onClick={() => this.props.onClick(i)}
                 value={this.renderValue(i)}
+                key={i}
             />
         );
     }
@@ -78,11 +79,22 @@ class Game extends React.Component {
         };
     }
 
+    printDebug(squares) {
+        let s = '';
+        for(var h = 0; h < squares.length; h++) {
+            if (h !== 0 && h % 5 === 0) {
+                s += "\n";
+            }
+            s += squares[h];
+        }
+        console.log(s);
+    }
 
     handleClick(i) {
         let squares = this.state.squares;
         if (!squares.length) {
             squares = this.initSquares(i);
+            this.printDebug(squares);
         }
 
         let status = this.state.status;
@@ -97,7 +109,6 @@ class Game extends React.Component {
         if (history.includes(i)) {
             return;
         }
-
 
         let square = squares[i]
         if (square === BOMB) {
@@ -151,19 +162,39 @@ class Game extends React.Component {
                 let index = i * delimiter + j;
                 if (squares[index] !== BOMB) {
                     let counter = 0;
-                    if (squares[index - delimiter] === BOMB) {
+
+                    if (squares[index - delimiter] === BOMB) {  // up
                         counter++;
                     } 
-                    if (squares[index + delimiter] === BOMB) {
+                    if (squares[index + delimiter] === BOMB) {  // down
                         counter++;
                     } 
-                    if ((index + 1) % delimiter !== 0 && squares[index + 1] === BOMB) {
-                        counter++;
+                    
+                    // check left for edge cases 
+                    if (index % delimiter !== 0) {
+                        if (squares[index - 1] === BOMB) {  // left
+                            counter++;
+                        }
+                        if (squares[index - (delimiter + 1)] === BOMB) {  // up + left
+                            counter++;
+                        }
+                        if (squares[index + (delimiter - 1)] === BOMB) {  // up + left
+                            counter++;
+                        }
                     }
-                    if (index % delimiter !== 0 && squares[index - 1] === BOMB) {
-                        counter++;
+
+                    // check right for edge cases
+                    if ((index + 1) % delimiter !== 0) {
+                        if (squares[index + 1] === BOMB) {  // right
+                            counter++;
+                        }
+                        if (squares[index - (delimiter - 1)] === BOMB) {  // up + right
+                            counter++;
+                        }
+                        if (squares[index + (delimiter + 1)] === BOMB) {  // up + right
+                            counter++;
+                        }
                     }
-                    // @TODO: add checks for rest neighbours 
 
                     squares[index] = counter;
                 }
