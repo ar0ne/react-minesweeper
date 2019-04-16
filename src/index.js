@@ -30,12 +30,10 @@ function Square(props) {
 
 class Board extends React.Component {
     render() {
+        var size = this.props.size;
 
-        // @TODO: take size from state
-        // @TODO: add support of different board sizes
-
-        let cols = 5;
-        let rows = 5;
+        let cols, rows;
+        cols = rows = Math.sqrt(size);
 
         let board = []
         for (var i = 0; i < cols; i++) {
@@ -76,13 +74,16 @@ class Game extends React.Component {
             squares: [],
             history: [],
             status: null,
+            size: 25,
         };
     }
 
+    // @TODO: for debug purposes only
     printDebug(squares) {
+        let delimiter = Math.sqrt(squares.length);
         let s = '';
         for(var h = 0; h < squares.length; h++) {
-            if (h !== 0 && h % 5 === 0) {
+            if (h !== 0 && h % delimiter === 0) {
                 s += "\n";
             }
             s += squares[h];
@@ -91,9 +92,10 @@ class Game extends React.Component {
     }
 
     handleClick(i) {
-        let squares = this.state.squares;
-        if (!squares.length) {
-            squares = this.initSquares(i);
+        let { squares, size } = this.state;
+        if (squares.length === 0) {
+            let complexity = size % 10;
+            squares = this.initSquares(i, size, complexity);
             this.printDebug(squares);
         }
 
@@ -144,11 +146,11 @@ class Game extends React.Component {
         return this.containsAllElements(history, notBombs);
     }
 
-    initSquares(excluded, size = 25, complexity = 5) {
+    initSquares(excluded, size, complexity=5) {
         let squares = Array(size).fill(null);
         let counter = 0;
         while(counter < complexity) {
-            let index = Math.floor(Math.random() * (size - 0));
+            let index = Math.floor(Math.random() * size);
             if (index === excluded || squares[index] === BOMB) {
                 continue;
             }
@@ -212,9 +214,14 @@ class Game extends React.Component {
         });
     }
 
+    changeSize(size) {
+        this.setState({
+            size: size,
+        });
+        this.restartGame();
+    }
 
     render() {
-
         let gameStatus = STATUSES[this.state.status];
 
         return (
@@ -224,7 +231,13 @@ class Game extends React.Component {
                     squares={this.state.squares}
                     history={this.state.history}
                     onClick={i => this.handleClick(i)}
+                    size={this.state.size}
                 />
+                <div>
+                    <button onClick={() => this.changeSize(25)}>25</button>
+                    <button onClick={() => this.changeSize(36)}>36</button>
+                    <button onClick={() => this.changeSize(49)}>49</button>
+                </div>
                 <button className="btn" onClick={() => this.restartGame()}>Restart</button>
             </div>
         );
