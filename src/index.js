@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 const BOMB = 'X';
+const ZERO = 0;
+const FLAG = '?';
 const GAME_OVER = "GAME_OVER";
 const GAME_WON = "GAME_WON";
 
@@ -13,14 +15,12 @@ const STATUSES = {
 }
 
 
-// @TODO: handle second mouse button
-
-
 function Square(props) {
     return (
         <button 
             className="square"
             onClick={props.onClick}
+            onContextMenu={props.onClick}
         >
         {props.value}
         </button> 
@@ -30,7 +30,7 @@ function Square(props) {
 
 class Board extends React.Component {
     render() {
-        var size = this.props.size;
+        const { size } = this.props;
 
         let cols, rows;
         cols = rows = Math.sqrt(size);
@@ -49,10 +49,19 @@ class Board extends React.Component {
         );
     }
 
+    handleClick(i, e) {
+        e.preventDefault();
+        if (e.type === 'click') {
+            this.props.onClick(i);
+        } else if (e.type === 'contextmenu') {
+            this.props.addFlag(i);
+        }
+    }
+
     renderSquare(i) {
         return (
             <Square 
-                onClick={() => this.props.onClick(i)}
+                onClick={(event) => this.handleClick(i, event) }
                 value={this.renderValue(i)}
                 key={i}
             />
@@ -62,6 +71,9 @@ class Board extends React.Component {
     renderValue(i) {
         if (this.props.history.includes(i)) {
             return this.props.squares[i];
+        }
+        if (this.props.flags.includes(i)) {
+            return FLAG;
         }
     }
 }
@@ -73,6 +85,7 @@ class Game extends React.Component {
         this.state = {
             squares: [],
             history: [],
+            flags: [],
             status: null,
             size: 25,
         };
@@ -93,7 +106,7 @@ class Game extends React.Component {
 
     handleClick(i) {
         let { squares, size } = this.state;
-        if (squares.length === 0) {
+        if (squares.length === ZERO) {
             let complexity = size % 10;
             squares = this.initSquares(i, size, complexity);
             this.printDebug(squares);
@@ -210,6 +223,7 @@ class Game extends React.Component {
         this.setState({
             squares: [],
             history: [],
+            flags: [],
             status: null,
         });
     }
@@ -221,6 +235,19 @@ class Game extends React.Component {
         this.restartGame();
     }
 
+    handleAddFlag(i) {
+        let { flags } = this.state;
+        if (!flags.includes(i)) {
+            this.setState({
+                flags: flags.concat(i)
+            });
+        } else {
+            this.setState({
+                flags: flags.filter((val, index, arr) => val !== i)
+            })
+        }
+    }
+
     render() {
         let gameStatus = STATUSES[this.state.status];
 
@@ -230,8 +257,10 @@ class Game extends React.Component {
                 <Board 
                     squares={this.state.squares}
                     history={this.state.history}
+                    flags={this.state.flags}
                     onClick={i => this.handleClick(i)}
                     size={this.state.size}
+                    addFlag={i => this.handleAddFlag(i)}
                 />
                 <div>
                     <button onClick={() => this.changeSize(25)}>25</button>
