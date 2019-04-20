@@ -15,11 +15,15 @@ const STATUSES = {
     null: 'Good luck!',
 }
 
-
 function Square(props) {
+    let buttonClasses = "square";
+    if (props.failSquare) {
+        buttonClasses += " fail";
+    }
+    
     return (
         <button 
-            className="square"
+            className={buttonClasses}
             onClick={props.onClick}
             onContextMenu={props.onClick}
         >
@@ -92,6 +96,7 @@ class Board extends React.Component {
                 onClick={(event) => this.handleClick(i, event) }
                 value={this.renderValue(i)}
                 key={i}
+                failSquare={this.props.failSquare === i}
             />
         );
     }
@@ -119,6 +124,7 @@ class Game extends React.Component {
             flags: [],
             status: null,
             size: 25,
+            failSquare: null,
             complexity: DEFAULT_COMPLEXITY
         };
     }
@@ -148,7 +154,7 @@ class Game extends React.Component {
             this.printDebug(squares);
         }
 
-        let { status } = this.state;
+        let { status, failSquare } = this.state;
 
         if (status === GAME_OVER || status === GAME_WON) {
             return;
@@ -169,6 +175,7 @@ class Game extends React.Component {
         } else if (square === BOMB) {
             status = GAME_OVER;
             history = squares;
+            failSquare = i;
         } else if (this.isGameWon(squares, history)) {
             status = GAME_WON;
         }
@@ -177,6 +184,7 @@ class Game extends React.Component {
             squares: squares,
             history: history,
             status: status,
+            failSquare: failSquare
         });
     }
 
@@ -260,6 +268,7 @@ class Game extends React.Component {
             history: [],
             flags: [],
             status: null,
+            failSquare: null,
         });
     }
 
@@ -285,7 +294,7 @@ class Game extends React.Component {
 
     render() {
 
-        const { status, squares, history, flags, size, complexity} = this.state;
+        const { status, squares, history, flags, size, complexity, failSquare} = this.state;
         const gameStatus = STATUSES[status];
 
         return (
@@ -295,6 +304,7 @@ class Game extends React.Component {
                     squares={squares}
                     history={history}
                     flags={flags}
+                    failSquare={failSquare}
                     status={status}
                     onClick={i => this.handleClick(i)}
                     size={size}
