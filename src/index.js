@@ -7,6 +7,7 @@ const ZERO = 0;
 const FLAG = '?';
 const GAME_OVER = "GAME_OVER";
 const GAME_WON = "GAME_WON";
+const DEFAULT_COMPLEXITY = 20;
 
 const STATUSES = {
     GAME_OVER: 'Game over!',
@@ -25,6 +26,33 @@ function Square(props) {
         {props.value}
         </button> 
     );
+}
+
+class Slider extends React.Component {
+    handleInput = event => {
+        const { value } = event.target;
+        this.setState({value});
+        this.props.handleSlider(value);
+    }
+
+    render() {
+        const { value, min, max, step, publicValue } = this.props;
+
+        return (
+            <div className="slidecontainer">
+                <input 
+                    type="range"
+                    min={min} 
+                    max={max}
+                    step={step}
+                    value={value} 
+                    className="slider"
+                    onChange={this.handleInput}
+                />
+                <span>{ publicValue }</span>
+            </div>
+        )
+    }
 }
 
 
@@ -88,6 +116,7 @@ class Game extends React.Component {
             flags: [],
             status: null,
             size: 25,
+            complexity: DEFAULT_COMPLEXITY
         };
     }
 
@@ -107,7 +136,11 @@ class Game extends React.Component {
     handleClick(i) {
         let { squares, size } = this.state;
         if (squares.length === ZERO) {
-            let complexity = size % 10;
+            let complexity = size * (this.state.complexity / 100);
+            if (size - complexity < 1) {
+                this.setState({complexity: DEFAULT_COMPLEXITY});
+                return;
+            }
             squares = this.initSquares(i, size, complexity);
             this.printDebug(squares);
         }
@@ -249,25 +282,45 @@ class Game extends React.Component {
     }
 
     render() {
-        let gameStatus = STATUSES[this.state.status];
+
+        const { status, squares, history, flags, size, complexity} = this.state;
+        const gameStatus = STATUSES[status];
 
         return (
             <div>
                 <h1 className='status'>{gameStatus}</h1>
                 <Board 
-                    squares={this.state.squares}
-                    history={this.state.history}
-                    flags={this.state.flags}
+                    squares={squares}
+                    history={history}
+                    flags={flags}
                     onClick={i => this.handleClick(i)}
-                    size={this.state.size}
+                    size={size}
                     addFlag={i => this.handleAddFlag(i)}
                 />
-                <div>
-                    <button onClick={() => this.changeSize(25)}>25</button>
-                    <button onClick={() => this.changeSize(36)}>36</button>
-                    <button onClick={() => this.changeSize(49)}>49</button>
-                </div>
-                <button className="btn" onClick={() => this.restartGame()}>Restart</button>
+                <button 
+                    className="btn" 
+                    onClick={() => this.restartGame()}>Restart
+                </button>
+
+                <p>Choose complexity:</p>
+                <Slider
+                    value={complexity}
+                    publicValue={complexity}
+                    min={1}
+                    max={99}
+                    handleSlider={(i) => this.setState({complexity: i})}
+                />
+
+                <p>Choose board size:</p>
+                <Slider
+                    value={Math.sqrt(size)}
+                    min={2}
+                    max={25}
+                    step={1}
+                    handleSlider={(val) => this.changeSize(val * val)}
+                    publicValue={size}
+                />
+                
             </div>
         );
     }
