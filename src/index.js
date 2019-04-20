@@ -97,6 +97,9 @@ class Board extends React.Component {
     }
 
     renderValue(i) {
+        if (this.props.status === GAME_OVER) {
+            return this.props.squares[i];
+        }
         if (this.props.history.includes(i)) {
             return this.props.squares[i];
         }
@@ -135,7 +138,7 @@ class Game extends React.Component {
 
     handleClick(i) {
         let { squares, size } = this.state;
-        if (squares.length === ZERO) {
+        if (!squares.length) {
             let complexity = size * (this.state.complexity / 100);
             if (size - complexity < 1) {
                 this.setState({complexity: DEFAULT_COMPLEXITY});
@@ -145,34 +148,33 @@ class Game extends React.Component {
             this.printDebug(squares);
         }
 
-        let status = this.state.status;
+        let { status } = this.state;
 
         if (status === GAME_OVER || status === GAME_WON) {
             return;
         }
 
         let history = this.state.history.slice();
-        let closesZeroes = [];
 
         if (history.includes(i)) {
             return;
+        } else {
+            history = history.concat(i);
         }
 
-        let square = squares[i]
-        if (square === BOMB) {
+        const square = squares[i];
+        if (square === ZERO) {
+            const closesZeroes = this.openClosestZeroSquares(i);
+            history = history.concat(closesZeroes);
+        } else if (square === BOMB) {
             status = GAME_OVER;
-        } else if (square === 0) {
-            closesZeroes = this.openClosestZeroSquares(i);
-        } 
-
-        history = history.concat(i).concat(closesZeroes);
-
-        if (this.isGameWon(squares, history)) {
+            history = squares;
+        } else if (this.isGameWon(squares, history)) {
             status = GAME_WON;
         }
 
         this.setState({
-            squares: squares.slice(),
+            squares: squares,
             history: history,
             status: status,
         });
@@ -293,6 +295,7 @@ class Game extends React.Component {
                     squares={squares}
                     history={history}
                     flags={flags}
+                    status={status}
                     onClick={i => this.handleClick(i)}
                     size={size}
                     addFlag={i => this.handleAddFlag(i)}
