@@ -7,8 +7,8 @@ const ZERO = 0;
 const FLAG = '?';
 const GAME_OVER = "GAME_OVER";
 const GAME_WON = "GAME_WON";
-const DEFAULT_COMPLEXITY = 1;
-const DEFAULT_BOARD_SIZE = Math.pow(6, 2);
+const DEFAULT_COMPLEXITY = 3;
+const DEFAULT_BOARD_SIZE = Math.pow(7, 2);
 
 const STATUSES = {
     GAME_OVER: 'Game over!',
@@ -196,55 +196,96 @@ class Game extends React.Component {
         let delimiter = Math.sqrt(squares.length);
 
         var checkLeft = function(index, zeroes) {
-            if (index % delimiter !== 0) { //left edge
-                zeroes.add(index - 1)
-                if (squares[index] === ZERO && squares[index - 1] !== ZERO) {
-                    return zeroes;
-                }
-                return checkLeft(index - 1, zeroes);
+            if (zeroes.has(index)) {
+                return zeroes;
             }
-            return zeroes;
+
+            if (index === 0 ||
+                index % delimiter === 0) { //left edge
+                return zeroes;
+            }
+
+            if (squares[index] !== BOMB) {
+                zeroes.add(index);
+            }
+
+            zeroes = checkTop(index - delimiter, zeroes);
+            zeroes = checkBottom(index + delimiter, zeroes);
+            zeroes = checkRight(index + 1, zeroes);
+            
+            return checkLeft(index - 1, zeroes);
         }
 
         var checkRight = function(index, zeroes) {
-            if ((index + 1) % delimiter !== 0) { //right edge
-                zeroes.add(index + 1)
-                if (squares[index] === ZERO && squares[index + 1] !== ZERO) {
-                    return zeroes;
-                }
-                return checkRight(index + 1, zeroes);
+            if (zeroes.has(index)) {
+                return zeroes;
             }
-            return zeroes;
+
+            if ((index + 1) % delimiter === 0) { //not right edge
+                return zeroes;
+            }
+            
+            if (squares[index] !== BOMB) {
+                zeroes.add(index);
+            }
+
+            zeroes = checkTop(index - delimiter, zeroes);
+            zeroes = checkBottom(index + delimiter, zeroes);
+            zeroes = checkLeft(index - 1, zeroes);
+
+            return checkRight(index + 1, zeroes);
         }
 
         var checkTop = function(index, zeroes) {
-            if (index > delimiter - 1) {
-                zeroes.add(index - delimiter);
-                if (squares[index] === ZERO && squares[index - delimiter] !== ZERO) {
-                    return zeroes;
-                }
-                return checkTop(index - delimiter, zeroes);
+
+            if (zeroes.has(index)) {
+                return zeroes;
             }
-            return zeroes;
+
+            if (index - delimiter + 1 < 0) {
+                return zeroes;
+            }
+
+            if (squares[index] !== BOMB) {
+                zeroes.add(index);
+            }
+
+            zeroes = checkRight(index + 1, zeroes);
+            zeroes = checkLeft(index - 1, zeroes);
+            zeroes = checkBottom(index + delimiter, zeroes);
+
+            return checkTop(index - delimiter, zeroes);
         }
 
         var checkBottom = function(index, zeroes) {
-            if (index + delimiter < squares.length) {
-                zeroes.add(index + delimiter);
-                if (squares[index] === ZERO && squares[index + delimiter] !== ZERO) {
-                    return zeroes;
-                }
-                return checkBottom(index + delimiter, zeroes);
+
+            if (zeroes.has(index)) {
+                return zeroes;
             }
-            return zeroes;
+
+            if (index + delimiter > squares.length) {
+                return zeroes;
+            }
+
+            if (squares[index] !== BOMB) {
+                zeroes.add(index);
+            }
+
+            zeroes = checkLeft(index - 1, zeroes);
+            zeroes = checkRight(index + 1, zeroes);
+            zeroes = checkTop(index - delimiter, zeroes);
+
+            return checkBottom(index + delimiter, zeroes);
         }
 
+        // history.splice(history.indexOf(i), 1)
         var zeroes = new Set(history);
 
-        zeroes.add(checkLeft(i, zeroes));
-        zeroes.add(checkRight(i, zeroes));
-        zeroes.add(checkTop(i, zeroes));
-        zeroes.add(checkBottom(i, zeroes));
+        zeroes = checkLeft(i - 1, zeroes);
+        zeroes = checkRight(i + 1, zeroes);
+        zeroes = checkBottom(i + delimiter, zeroes);
+
+        zeroes = checkTop(i - delimiter, zeroes);
 
         return Array.from(zeroes);
     }
