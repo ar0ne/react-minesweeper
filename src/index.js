@@ -166,8 +166,6 @@ class Game extends React.Component {
 
         if (history.includes(i)) {
             return;
-        } else {
-            history = history.concat(i);
         }
 
         const square = squares[i];
@@ -179,7 +177,11 @@ class Game extends React.Component {
             status = GAME_OVER;
             history = squares;
             failSquare = i;
-        } else if (this.isGameWon(squares, history)) {
+        }
+
+        history = history.concat(i);
+        
+        if (this.isGameWon(squares, history)) {
             status = GAME_WON;
         }
 
@@ -192,8 +194,7 @@ class Game extends React.Component {
     }
 
     openClosestZeroSquares(i, squares, history) {
-
-        let delimiter = Math.sqrt(squares.length);
+        // pretty dirty solution ;(
 
         var isIndexValid = function(index, squares) {
             return index !== undefined &&
@@ -278,7 +279,7 @@ class Game extends React.Component {
             return checkBottom(index + delimiter, zeroes);
         }
 
-        history.splice(history.indexOf(i), 1)
+        var delimiter = Math.sqrt(squares.length);
         var zeroes = new Set(history);
 
         zeroes = checkLeft(i, zeroes);
