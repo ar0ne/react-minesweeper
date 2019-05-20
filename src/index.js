@@ -195,23 +195,28 @@ class Game extends React.Component {
 
         let delimiter = Math.sqrt(squares.length);
 
+        var isIndexValid = function(index, squares) {
+            return index !== undefined &&
+                index >= 0 && 
+                index < squares.length &&
+                squares[index] !== BOMB;
+        }
+
         var checkLeft = function(index, zeroes) {
             if (zeroes.has(index)) {
                 return zeroes;
             }
 
-            if (index === 0 ||
-                index % delimiter === 0) { //left edge
-                return zeroes;
-            }
-
-            if (squares[index] !== BOMB) {
+            if (isIndexValid(index, squares)) {
                 zeroes.add(index);
             }
 
             zeroes = checkTop(index - delimiter, zeroes);
             zeroes = checkBottom(index + delimiter, zeroes);
-            zeroes = checkRight(index + 1, zeroes);
+
+            if (index % delimiter === 0) { // left edge
+                return zeroes;
+            }
             
             return checkLeft(index - 1, zeroes);
         }
@@ -221,71 +226,62 @@ class Game extends React.Component {
                 return zeroes;
             }
 
-            if ((index + 1) % delimiter === 0) { //not right edge
-                return zeroes;
-            }
-            
-            if (squares[index] !== BOMB) {
+            if (isIndexValid(index, squares)) {
                 zeroes.add(index);
             }
-
-            zeroes = checkTop(index - delimiter, zeroes);
+            
             zeroes = checkBottom(index + delimiter, zeroes);
-            zeroes = checkLeft(index - 1, zeroes);
+            zeroes = checkTop(index - delimiter, zeroes);
+
+            if ((index + 1) % delimiter === 0) { // right edge
+                return zeroes;
+            }
 
             return checkRight(index + 1, zeroes);
         }
 
         var checkTop = function(index, zeroes) {
-
             if (zeroes.has(index)) {
                 return zeroes;
             }
 
-            if (index - delimiter + 1 < 0) {
-                return zeroes;
-            }
-
-            if (squares[index] !== BOMB) {
+            if (isIndexValid(index, squares)) {
                 zeroes.add(index);
             }
 
+            if (index - delimiter < 0) {
+                return zeroes;
+            }
+           
             zeroes = checkRight(index + 1, zeroes);
             zeroes = checkLeft(index - 1, zeroes);
-            zeroes = checkBottom(index + delimiter, zeroes);
 
             return checkTop(index - delimiter, zeroes);
         }
 
         var checkBottom = function(index, zeroes) {
-
             if (zeroes.has(index)) {
                 return zeroes;
+            }
+
+            if (isIndexValid(index, squares)) {
+                zeroes.add(index);
             }
 
             if (index + delimiter > squares.length) {
                 return zeroes;
             }
 
-            if (squares[index] !== BOMB) {
-                zeroes.add(index);
-            }
-
-            zeroes = checkLeft(index - 1, zeroes);
             zeroes = checkRight(index + 1, zeroes);
-            zeroes = checkTop(index - delimiter, zeroes);
+            zeroes = checkLeft(index - 1, zeroes);
 
             return checkBottom(index + delimiter, zeroes);
         }
 
-        // history.splice(history.indexOf(i), 1)
+        history.splice(history.indexOf(i), 1)
         var zeroes = new Set(history);
 
-        zeroes = checkLeft(i - 1, zeroes);
-        zeroes = checkRight(i + 1, zeroes);
-        zeroes = checkBottom(i + delimiter, zeroes);
-
-        zeroes = checkTop(i - delimiter, zeroes);
+        zeroes = checkLeft(i, zeroes);
 
         return Array.from(zeroes);
     }

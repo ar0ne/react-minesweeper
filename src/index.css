@@ -34,4 +34,5 @@ body {
 
   .index {
     color: grey;
+    display: none;
   }
