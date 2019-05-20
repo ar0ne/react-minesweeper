@@ -7,7 +7,8 @@ const ZERO = 0;
 const FLAG = '?';
 const GAME_OVER = "GAME_OVER";
 const GAME_WON = "GAME_WON";
-const DEFAULT_COMPLEXITY = 20;
+const DEFAULT_COMPLEXITY = 1;
+const DEFAULT_BOARD_SIZE = Math.pow(6, 2);
 
 const STATUSES = {
     GAME_OVER: 'Game over!',
@@ -20,7 +21,7 @@ function Square(props) {
     if (props.failSquare) {
         buttonClasses += " fail";
     }
-    
+
     return (
         <button 
             className={buttonClasses}
@@ -46,11 +47,11 @@ class Slider extends React.Component {
             <div className="slidecontainer">
                 <input 
                     type="range"
+                    className="slider"
                     min={min} 
                     max={max}
                     step={step}
                     value={value} 
-                    className="slider"
                     onChange={this.handleInput}
                 />
                 <span>{ publicValue }</span>
@@ -111,6 +112,7 @@ class Board extends React.Component {
         if (this.props.flags.includes(i)) {
             return FLAG;
         }
+        return <span className="index">{i}</span>;
     }
 }
 
@@ -123,7 +125,7 @@ class Game extends React.Component {
             history: [],
             flags: [],
             status: null,
-            size: 25,
+            size: DEFAULT_BOARD_SIZE,
             failSquare: null,
             complexity: DEFAULT_COMPLEXITY
         };
@@ -170,7 +172,8 @@ class Game extends React.Component {
 
         const square = squares[i];
         if (square === ZERO) {
-            const closesZeroes = this.openClosestZeroSquares(i);
+            const closesZeroes = this.openClosestZeroSquares(i, squares, history);
+            console.log(closesZeroes);
             history = history.concat(closesZeroes);
         } else if (square === BOMB) {
             status = GAME_OVER;
@@ -188,9 +191,62 @@ class Game extends React.Component {
         });
     }
 
-    openClosestZeroSquares(i) {
-        // @TODO: recursively check neighbours
-        return [];
+    openClosestZeroSquares(i, squares, history) {
+
+        let delimiter = Math.sqrt(squares.length);
+
+        var checkLeft = function(index, zeroes) {
+            if (index % delimiter !== 0) { //left edge
+                zeroes.add(index - 1)
+                if (squares[index] === ZERO && squares[index - 1] !== ZERO) {
+                    return zeroes;
+                }
+                return checkLeft(index - 1, zeroes);
+            }
+            return zeroes;
+        }
+
+        var checkRight = function(index, zeroes) {
+            if ((index + 1) % delimiter !== 0) { //right edge
+                zeroes.add(index + 1)
+                if (squares[index] === ZERO && squares[index + 1] !== ZERO) {
+                    return zeroes;
+                }
+                return checkRight(index + 1, zeroes);
+            }
+            return zeroes;
+        }
+
+        var checkTop = function(index, zeroes) {
+            if (index > delimiter - 1) {
+                zeroes.add(index - delimiter);
+                if (squares[index] === ZERO && squares[index - delimiter] !== ZERO) {
+                    return zeroes;
+                }
+                return checkTop(index - delimiter, zeroes);
+            }
+            return zeroes;
+        }
+
+        var checkBottom = function(index, zeroes) {
+            if (index + delimiter < squares.length) {
+                zeroes.add(index + delimiter);
+                if (squares[index] === ZERO && squares[index + delimiter] !== ZERO) {
+                    return zeroes;
+                }
+                return checkBottom(index + delimiter, zeroes);
+            }
+            return zeroes;
+        }
+
+        var zeroes = new Set(history);
+
+        zeroes.add(checkLeft(i, zeroes));
+        zeroes.add(checkRight(i, zeroes));
+        zeroes.add(checkTop(i, zeroes));
+        zeroes.add(checkBottom(i, zeroes));
+
+        return Array.from(zeroes);
     }
 
     containsAllElements = (arr, target) => target.every(v => arr.includes(v));
