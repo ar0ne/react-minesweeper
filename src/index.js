@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 const BOMB = 'X';
+const ZERO = 0;
+const FLAG = '?';
 const GAME_OVER = "GAME_OVER";
 const GAME_WON = "GAME_WON";
+const DEFAULT_COMPLEXITY = 3;
+const DEFAULT_BOARD_SIZE = Math.pow(7, 2);
 
 const STATUSES = {
     GAME_OVER: 'Game over!',
@@ -12,25 +16,54 @@ const STATUSES = {
     null: 'Good luck!',
 }
 
-
-// @TODO: handle second mouse button
-
-
 function Square(props) {
+    let buttonClasses = "square";
+    if (props.failSquare) {
+        buttonClasses += " fail";
+    }
+
     return (
         <button 
-            className="square"
+            className={buttonClasses}
             onClick={props.onClick}
+            onContextMenu={props.onClick}
         >
         {props.value}
         </button> 
     );
 }
 
+class Slider extends React.Component {
+    handleInput = event => {
+        const { value } = event.target;
+        this.setState({value});
+        this.props.handleSlider(value);
+    }
+
+    render() {
+        const { value, min, max, step, publicValue } = this.props;
+
+        return (
+            <div className="slidecontainer">
+                <input 
+                    type="range"
+                    className="slider"
+                    min={min} 
+                    max={max}
+                    step={step}
+                    value={value} 
+                    onChange={this.handleInput}
+                />
+                <span>{ publicValue }</span>
+            </div>
+        )
+    }
+}
+
 
 class Board extends React.Component {
     render() {
-        var size = this.props.size;
+        const { size } = this.props;
 
         let cols, rows;
         cols = rows = Math.sqrt(size);
@@ -49,20 +82,37 @@ class Board extends React.Component {
         );
     }
 
+    handleClick(i, e) {
+        e.preventDefault();
+        if (e.type === 'click') {
+            this.props.onClick(i);
+        } else if (e.type === 'contextmenu') {
+            this.props.addFlag(i);
+        }
+    }
+
     renderSquare(i) {
         return (
             <Square 
-                onClick={() => this.props.onClick(i)}
+                onClick={(event) => this.handleClick(i, event) }
                 value={this.renderValue(i)}
                 key={i}
+                failSquare={this.props.failSquare === i}
             />
         );
     }
 
     renderValue(i) {
+        if (this.props.status === GAME_OVER) {
+            return this.props.squares[i];
+        }
         if (this.props.history.includes(i)) {
             return this.props.squares[i];
         }
+        if (this.props.flags.includes(i)) {
+            return FLAG;
+        }
+        return <span className="index">{i}</span>;
     }
 }
 
@@ -73,8 +123,11 @@ class Game extends React.Component {
         this.state = {
             squares: [],
             history: [],
+            flags: [],
             status: null,
-            size: 25,
+            size: DEFAULT_BOARD_SIZE,
+            failSquare: null,
+            complexity: DEFAULT_COMPLEXITY
         };
     }
 
@@ -93,48 +146,145 @@ class Game extends React.Component {
 
     handleClick(i) {
         let { squares, size } = this.state;
-        if (squares.length === 0) {
-            let complexity = size % 10;
+        if (!squares.length) {
+            let complexity = size * (this.state.complexity / 100);
+            if (size - complexity < 1) {
+                this.setState({complexity: DEFAULT_COMPLEXITY});
+                return;
+            }
             squares = this.initSquares(i, size, complexity);
             this.printDebug(squares);
         }
 
-        let status = this.state.status;
+        let { status, failSquare } = this.state;
 
         if (status === GAME_OVER || status === GAME_WON) {
             return;
         }
 
         let history = this.state.history.slice();
-        let closesZeroes = [];
 
         if (history.includes(i)) {
             return;
         }
 
-        let square = squares[i]
-        if (square === BOMB) {
+        const square = squares[i];
+        if (square === ZERO) {
+            const closesZeroes = this.openClosestZeroSquares(i, squares, history);
+            console.log(closesZeroes);
+            history = history.concat(closesZeroes);
+        } else if (square === BOMB) {
             status = GAME_OVER;
-        } else if (square === 0) {
-            closesZeroes = this.openClosestZeroSquares(i);
-        } 
+            history = squares;
+            failSquare = i;
+        }
 
-        history = history.concat(i).concat(closesZeroes);
-
+        history = history.concat(i);
+        
         if (this.isGameWon(squares, history)) {
             status = GAME_WON;
         }
 
         this.setState({
-            squares: squares.slice(),
+            squares: squares,
             history: history,
             status: status,
+            failSquare: failSquare
         });
     }
 
-    openClosestZeroSquares(i) {
-        // @TODO: recursively check neighbours
-        return [];
+    openClosestZeroSquares(i, squares, history) {
+        // pretty dirty solution ;(
+
+        var isIndexValid = function(index, squares) {
+            return index !== undefined &&
+                index >= 0 && 
+                index < squares.length &&
+                squares[index] !== BOMB;
+        }
+
+        var checkLeft = function(index, zeroes) {
+            if (zeroes.has(index)) {
+                return zeroes;
+            }
+
+            if (isIndexValid(index, squares)) {
+                zeroes.add(index);
+            }
+
+            zeroes = checkTop(index - delimiter, zeroes);
+            zeroes = checkBottom(index + delimiter, zeroes);
+
+            if (index % delimiter === 0) { // left edge
+                return zeroes;
+            }
+            
+            return checkLeft(index - 1, zeroes);
+        }
+
+        var checkRight = function(index, zeroes) {
+            if (zeroes.has(index)) {
+                return zeroes;
+            }
+
+            if (isIndexValid(index, squares)) {
+                zeroes.add(index);
+            }
+            
+            zeroes = checkBottom(index + delimiter, zeroes);
+            zeroes = checkTop(index - delimiter, zeroes);
+
+            if ((index + 1) % delimiter === 0) { // right edge
+                return zeroes;
+            }
+
+            return checkRight(index + 1, zeroes);
+        }
+
+        var checkTop = function(index, zeroes) {
+            if (zeroes.has(index)) {
+                return zeroes;
+            }
+
+            if (isIndexValid(index, squares)) {
+                zeroes.add(index);
+            }
+
+            if (index - delimiter < 0) {
+                return zeroes;
+            }
+           
+            zeroes = checkRight(index + 1, zeroes);
+            zeroes = checkLeft(index - 1, zeroes);
+
+            return checkTop(index - delimiter, zeroes);
+        }
+
+        var checkBottom = function(index, zeroes) {
+            if (zeroes.has(index)) {
+                return zeroes;
+            }
+
+            if (isIndexValid(index, squares)) {
+                zeroes.add(index);
+            }
+
+            if (index + delimiter > squares.length) {
+                return zeroes;
+            }
+
+            zeroes = checkRight(index + 1, zeroes);
+            zeroes = checkLeft(index - 1, zeroes);
+
+            return checkBottom(index + delimiter, zeroes);
+        }
+
+        var delimiter = Math.sqrt(squares.length);
+        var zeroes = new Set(history);
+
+        zeroes = checkLeft(i, zeroes);
+
+        return Array.from(zeroes);
     }
 
     containsAllElements = (arr, target) => target.every(v => arr.includes(v));
@@ -210,7 +360,9 @@ class Game extends React.Component {
         this.setState({
             squares: [],
             history: [],
+            flags: [],
             status: null,
+            failSquare: null,
         });
     }
 
@@ -221,24 +373,61 @@ class Game extends React.Component {
         this.restartGame();
     }
 
+    handleAddFlag(i) {
+        let { flags } = this.state;
+        if (!flags.includes(i)) {
+            this.setState({
+                flags: flags.concat(i)
+            });
+        } else {
+            this.setState({
+                flags: flags.filter((val, index, arr) => val !== i)
+            })
+        }
+    }
+
     render() {
-        let gameStatus = STATUSES[this.state.status];
+
+        const { status, squares, history, flags, size, complexity, failSquare} = this.state;
+        const gameStatus = STATUSES[status];
 
         return (
             <div>
                 <h1 className='status'>{gameStatus}</h1>
                 <Board 
-                    squares={this.state.squares}
-                    history={this.state.history}
+                    squares={squares}
+                    history={history}
+                    flags={flags}
+                    failSquare={failSquare}
+                    status={status}
                     onClick={i => this.handleClick(i)}
-                    size={this.state.size}
+                    size={size}
+                    addFlag={i => this.handleAddFlag(i)}
                 />
-                <div>
-                    <button onClick={() => this.changeSize(25)}>25</button>
-                    <button onClick={() => this.changeSize(36)}>36</button>
-                    <button onClick={() => this.changeSize(49)}>49</button>
-                </div>
-                <button className="btn" onClick={() => this.restartGame()}>Restart</button>
+                <button 
+                    className="btn" 
+                    onClick={() => this.restartGame()}>Restart
+                </button>
+
+                <p>Choose complexity:</p>
+                <Slider
+                    value={complexity}
+                    publicValue={complexity}
+                    min={1}
+                    max={99}
+                    handleSlider={(i) => this.setState({complexity: i})}
+                />
+
+                <p>Choose board size:</p>
+                <Slider
+                    value={Math.sqrt(size)}
+                    min={2}
+                    max={25}
+                    step={1}
+                    handleSlider={(val) => this.changeSize(val * val)}
+                    publicValue={size}
+                />
+                
             </div>
         );
     }
