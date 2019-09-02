@@ -1,6 +1,7 @@
 {
   "name": "react-minesweeper",
   "version": "0.1.0",
+  "homepage": "https://ar0ne.github.io/react-minesweeper",
   "private": true,
   "dependencies": {
     "react": "^16.8.6",
